@@ -116,4 +116,145 @@ describe('task endpoints', () => {
     expect(deletedResponse.status).toBe(200);
     expect((await request(application).get(`/api/tasks/${taskId}`)).status).toBe(404);
   });
+
+  it('filters tasks by status, priority, assignee, and combined criteria', async () => {
+    const application = createApp('http://localhost:4200', createDatabase(':memory:'));
+    const projectId = await createProject(application);
+    await request(application).post(`/api/projects/${projectId}/tasks`).send({
+      title: 'Tarea de Ana',
+      status: 'pendiente',
+      priority: 'alta',
+      assignee: 'Ana García',
+    });
+    await request(application).post(`/api/projects/${projectId}/tasks`).send({
+      title: 'Tarea de Luis',
+      status: 'en_progreso',
+      priority: 'media',
+      assignee: 'Luis',
+    });
+    await request(application).post(`/api/projects/${projectId}/tasks`).send({
+      title: 'Tarea sin asignar',
+      status: 'pendiente',
+      priority: 'baja',
+    });
+
+    const status = await request(application)
+      .get(`/api/projects/${projectId}/tasks`)
+      .query({ status: 'pendiente' });
+    const priority = await request(application)
+      .get(`/api/projects/${projectId}/tasks`)
+      .query({ priority: 'media' });
+    const assignee = await request(application)
+      .get(`/api/projects/${projectId}/tasks`)
+      .query({ assignee: 'garcia' });
+    const combined = await request(application)
+      .get(`/api/projects/${projectId}/tasks`)
+      .query({ status: 'pendiente', priority: 'alta', assignee: 'ANA' });
+
+    expect(status.body).toHaveLength(2);
+    expect(priority.body).toHaveLength(1);
+    expect(assignee.body).toHaveLength(1);
+    expect(assignee.body[0].title).toBe('Tarea de Ana');
+    expect(combined.body).toHaveLength(1);
+  });
+
+  it('searches title and assignee without case or accent sensitivity', async () => {
+    const application = createApp('http://localhost:4200', createDatabase(':memory:'));
+    const projectId = await createProject(application);
+    await request(application).post(`/api/projects/${projectId}/tasks`).send({
+      title: 'Revisión de integración',
+      assignee: 'José Núñez',
+    });
+    await request(application).post(`/api/projects/${projectId}/tasks`).send({
+      title: 'Documentar API',
+      assignee: 'Marta',
+    });
+
+    const titleResult = await request(application)
+      .get(`/api/projects/${projectId}/tasks`)
+      .query({ q: 'INTEGRACION' });
+    const assigneeResult = await request(application)
+      .get(`/api/projects/${projectId}/tasks`)
+      .query({ q: 'jose nunez' });
+
+    expect(titleResult.body).toHaveLength(1);
+    expect(assigneeResult.body).toHaveLength(1);
+    expect(assigneeResult.body[0].title).toBe('Revisión de integración');
+  });
+
+  it('orders tasks by creation, title, and priority', async () => {
+    const application = createApp('http://localhost:4200', createDatabase(':memory:'));
+    const projectId = await createProject(application);
+    await request(application).post(`/api/projects/${projectId}/tasks`).send({
+      title: 'Zeta',
+      priority: 'baja',
+    });
+    await request(application).post(`/api/projects/${projectId}/tasks`).send({
+      title: 'Alfa',
+      priority: 'alta',
+    });
+    await request(application).post(`/api/projects/${projectId}/tasks`).send({
+      title: 'Media',
+      priority: 'media',
+    });
+
+    const newest = await request(application)
+      .get(`/api/projects/${projectId}/tasks`)
+      .query({ order: 'created_desc' });
+    const oldest = await request(application)
+      .get(`/api/projects/${projectId}/tasks`)
+      .query({ order: 'created_asc' });
+    const alphabetical = await request(application)
+      .get(`/api/projects/${projectId}/tasks`)
+      .query({ order: 'title' });
+    const byPriority = await request(application)
+      .get(`/api/projects/${projectId}/tasks`)
+      .query({ order: 'priority' });
+
+    expect(newest.body.map((task: { title: string }) => task.title)).toEqual([
+      'Media',
+      'Alfa',
+      'Zeta',
+    ]);
+    expect(oldest.body.map((task: { title: string }) => task.title)).toEqual([
+      'Zeta',
+      'Alfa',
+      'Media',
+    ]);
+    expect(alphabetical.body.map((task: { title: string }) => task.title)).toEqual([
+      'Alfa',
+      'Media',
+      'Zeta',
+    ]);
+    expect(byPriority.body.map((task: { title: string }) => task.title)).toEqual([
+      'Alfa',
+      'Media',
+      'Zeta',
+    ]);
+  });
+
+  it('returns an empty list for unmatched filters and rejects invalid parameters', async () => {
+    const application = createApp('http://localhost:4200', createDatabase(':memory:'));
+    const projectId = await createProject(application);
+    await request(application)
+      .post(`/api/projects/${projectId}/tasks`)
+      .send({ title: 'Tarea existente' });
+
+    const empty = await request(application)
+      .get(`/api/projects/${projectId}/tasks`)
+      .query({ q: 'no existe' });
+    const invalidStatus = await request(application)
+      .get(`/api/projects/${projectId}/tasks`)
+      .query({ status: 'invalido' });
+    const invalidOrder = await request(application)
+      .get(`/api/projects/${projectId}/tasks`)
+      .query({ order: 'invalido' });
+
+    expect(empty.status).toBe(200);
+    expect(empty.body).toEqual([]);
+    expect(invalidStatus.status).toBe(400);
+    expect(invalidStatus.body).toEqual({ error: 'El filtro de estado no es válido' });
+    expect(invalidOrder.status).toBe(400);
+    expect(invalidOrder.body).toEqual({ error: 'El orden de las tareas no es válido' });
+  });
 });

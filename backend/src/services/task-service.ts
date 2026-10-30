@@ -2,11 +2,14 @@ import { AppError } from '../app/errors.js';
 import { ProjectRepository } from '../repositories/project-repository.js';
 import {
   TaskRepository,
+  type TaskListFilters,
   type TaskRecord,
+  type TaskOrder,
 } from '../repositories/task-repository.js';
 
 const priorities = ['baja', 'media', 'alta'] as const;
 const statuses = ['pendiente', 'en_progreso', 'completada'] as const;
+const orders = ['created_desc', 'created_asc', 'title', 'priority'] as const;
 
 export interface TaskInput {
   title: unknown;
@@ -15,6 +18,14 @@ export interface TaskInput {
   status?: unknown;
   assignee?: unknown;
   dueDate?: unknown;
+}
+
+export interface TaskListQuery {
+  status?: unknown;
+  priority?: unknown;
+  assignee?: unknown;
+  q?: unknown;
+  order?: unknown;
 }
 
 function validateText(value: unknown, field: string, maxLength: number): string | null {
@@ -83,9 +94,9 @@ export class TaskService {
     private readonly projectRepository: ProjectRepository,
   ) {}
 
-  public list(projectId: number): TaskRecord[] {
+  public list(projectId: number, query: TaskListQuery = {}): TaskRecord[] {
     this.ensureProject(projectId);
-    return this.repository.findByProjectId(projectId);
+    return this.repository.findByProjectId(projectId, this.validateListQuery(query));
   }
 
   public get(id: number): TaskRecord {
@@ -165,5 +176,55 @@ export class TaskService {
     if (!this.projectRepository.findById(projectId)) {
       throw new AppError(404, 'Proyecto no encontrado');
     }
+  }
+
+  private validateListQuery(query: TaskListQuery): TaskListFilters {
+    const status = this.validateOptionalEnum(
+      query.status,
+      statuses,
+      'El filtro de estado no es válido',
+    );
+    const priority = this.validateOptionalEnum(
+      query.priority,
+      priorities,
+      'El filtro de prioridad no es válido',
+    );
+    const assignee = this.validateOptionalText(query.assignee, 'El responsable');
+    const search = this.validateOptionalText(query.q, 'La búsqueda');
+    const order = query.order ?? 'created_desc';
+    if (typeof order !== 'string' || !orders.includes(order as TaskOrder)) {
+      throw new AppError(400, 'El orden de las tareas no es válido');
+    }
+    return {
+      status,
+      priority,
+      assignee,
+      q: search,
+      order: order as TaskOrder,
+    };
+  }
+
+  private validateOptionalEnum<T extends readonly string[]>(
+    value: unknown,
+    allowed: T,
+    message: string,
+  ): T[number] | undefined {
+    if (value === undefined || value === '') {
+      return undefined;
+    }
+    if (typeof value !== 'string' || !allowed.includes(value)) {
+      throw new AppError(400, message);
+    }
+    return value as T[number];
+  }
+
+  private validateOptionalText(value: unknown, field: string): string | undefined {
+    if (value === undefined) {
+      return undefined;
+    }
+    if (typeof value !== 'string') {
+      throw new AppError(400, `${field} no es válido`);
+    }
+    return value.trim() || undefined;
   }
 }

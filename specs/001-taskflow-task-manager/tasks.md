@@ -130,14 +130,14 @@
 
 ### Backend
 
-- [ ] T028 Implementar filtros combinables por estado, prioridad y responsable.
-- [ ] T029 Implementar búsqueda parcial de título y responsable ignorando
+- [x] T028 Implementar filtros combinables por estado, prioridad y responsable.
+- [x] T029 Implementar búsqueda parcial de título y responsable ignorando
   mayúsculas, minúsculas y acentos.
-- [ ] T030 Implementar orden por fecha descendente por defecto, fecha
+- [x] T030 Implementar orden por fecha descendente por defecto, fecha
   ascendente, título alfabético y prioridad.
-- [ ] T031 Actualizar `GET /api/projects/:projectId/tasks` con `status`,
+- [x] T031 Actualizar `GET /api/projects/:projectId/tasks` con `status`,
   `priority`, `assignee`, `q` y orden; los filtros se combinan con AND.
-- [ ] T032 [P] Escribir pruebas de filtros combinados, búsqueda, ordenamiento y
+- [x] T032 [P] Escribir pruebas de filtros combinados, búsqueda, ordenamiento y
   resultado vacío.
 
 ### Frontend

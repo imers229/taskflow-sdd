@@ -31,15 +31,55 @@ export interface UpdateTaskRecord {
   dueDate: string | null;
 }
 
+export type TaskOrder =
+  | 'created_desc'
+  | 'created_asc'
+  | 'title'
+  | 'priority';
+
+export interface TaskListFilters {
+  status?: TaskRecord['status'];
+  priority?: TaskRecord['priority'];
+  assignee?: string;
+  q?: string;
+  order: TaskOrder;
+}
+
 export class TaskRepository {
   public constructor(private readonly database: SqliteDatabase) {}
 
-  public findByProjectId(projectId: number): TaskRecord[] {
-    return this.database
-      .prepare(
-        'SELECT * FROM tasks WHERE project_id = ? ORDER BY created_at DESC',
-      )
-      .all(projectId) as TaskRecord[];
+  public findByProjectId(
+    projectId: number,
+    filters: TaskListFilters = { order: 'created_desc' },
+  ): TaskRecord[] {
+    const conditions = ['project_id = ?'];
+    const values: Array<number | string> = [projectId];
+    if (filters.status) {
+      conditions.push('status = ?');
+      values.push(filters.status);
+    }
+    if (filters.priority) {
+      conditions.push('priority = ?');
+      values.push(filters.priority);
+    }
+    const tasks = this.database
+      .prepare(`SELECT * FROM tasks WHERE ${conditions.join(' AND ')}`)
+      .all(...values) as TaskRecord[];
+
+    const normalizedAssignee = normalizeSearchText(filters.assignee ?? '');
+    const normalizedQuery = normalizeSearchText(filters.q ?? '');
+    const filteredTasks = tasks.filter((task) => {
+      const assignee = normalizeSearchText(task.assignee ?? '');
+      const title = normalizeSearchText(task.title);
+      return (
+        (!normalizedAssignee || assignee.includes(normalizedAssignee)) &&
+        (!normalizedQuery ||
+          title.includes(normalizedQuery) ||
+          assignee.includes(normalizedQuery))
+      );
+    });
+
+    return filteredTasks.sort((left, right) => compareTasks(left, right, filters.order));
   }
 
   public findById(id: number): TaskRecord | undefined {
@@ -173,4 +213,40 @@ export class TaskRepository {
         newValue,
       );
   }
+}
+
+const priorityRank: Record<TaskRecord['priority'], number> = {
+  alta: 0,
+  media: 1,
+  baja: 2,
+};
+
+function normalizeSearchText(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('es');
+}
+
+function compareTasks(
+  left: TaskRecord,
+  right: TaskRecord,
+  order: TaskOrder,
+): number {
+  if (order === 'created_asc') {
+    return left.created_at.localeCompare(right.created_at);
+  }
+  if (order === 'title') {
+    return (
+      normalizeSearchText(left.title).localeCompare(normalizeSearchText(right.title)) ||
+      right.created_at.localeCompare(left.created_at)
+    );
+  }
+  if (order === 'priority') {
+    return (
+      priorityRank[left.priority] - priorityRank[right.priority] ||
+      right.created_at.localeCompare(left.created_at)
+    );
+  }
+  return right.created_at.localeCompare(left.created_at);
 }
