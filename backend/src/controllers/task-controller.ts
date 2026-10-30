@@ -8,7 +8,7 @@ export class TaskController {
 
   public list = (request: Request, response: Response): void => {
     response.status(200).json(
-      this.service.list(this.parseId(request.params.projectId)),
+      this.service.list(this.parseId(request.params.projectId), request.query),
     );
   };
 
