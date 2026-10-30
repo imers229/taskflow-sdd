@@ -40,16 +40,16 @@
   JSON consistentes.
 - [x] T012 [P] Escribir pruebas de base de datos, claves foráneas, repositorios
   y manejo de errores.
-- [ ] T033 Crear la aplicación Angular standalone con Router, `HttpClient`,
+- [x] T033 Crear la aplicación Angular standalone con Router, `HttpClient`,
   Reactive Forms y TypeScript estricto.
 - [ ] T034 [P] Configurar modelos TypeScript para proyectos, tareas, resumen,
   historial, errores y filtros.
 - [ ] T035 [P] Implementar servicios HTTP base con URL configurable.
-- [ ] T036 [P] Implementar interceptor de errores para respuestas de API y
+- [x] T036 [P] Implementar interceptor de errores para respuestas de API y
   fallos de conexión en español.
 - [ ] T037 [P] Crear componentes reutilizables de carga, error, lista vacía,
   sin resultados, confirmación y mensajes accesibles.
-- [ ] T038 [P] Crear estilos responsive comunes con CSS Grid y Flexbox, sin
+- [x] T038 [P] Crear estilos responsive comunes con CSS Grid y Flexbox, sin
   librería externa de UI.
 
 ## HU1 (P1): Gestionar proyectos
@@ -174,8 +174,8 @@
   actualización tras cambios de tareas.
 - [ ] T058 Implementar `/projects/:id/history` con valores anterior y nuevo de
   cada cambio.
-- [x] T059 [P] Escribir pruebas del panel de resumen, historial y estados de
-  interfaz.
+- [x] T059 [P] Escribir pruebas del panel de resumen y estados de interfaz
+  implementados; el historial no está cubierto.
 
 ## Integración transversal y entrega
 
@@ -217,3 +217,10 @@ Todas las pruebas → T062/T063/T064 → T066 → T068
 Las tareas `[P]` solo son paralelizables dentro de estos límites: no deben
 iniciarse antes de sus dependencias técnicas y no deben modificar
 simultáneamente los mismos archivos sin coordinación.
+
+## Fuera de esta entrega
+
+No se implementaron T034 (modelos completos de historial y errores), T035
+(URL de API configurable), T037 (componentes compartidos reutilizables), T049,
+T054, T055, T056, T058, T060 y T065. T059 cubre únicamente las pruebas del
+panel de resumen y de los estados de interfaz existentes; no cubre historial.
