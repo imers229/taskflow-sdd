@@ -183,11 +183,11 @@
   incremental ante fallos de conexión y opción de reintento manual.
 - [ ] T061 [P] Verificar responsive, etiquetas de formularios, foco,
   contraste y estados de carga, error, vacío y sin resultados.
-- [ ] T062 Crear `.github/workflows/ci.yml` con jobs separados para backend y
+- [x] T062 Crear `.github/workflows/ci.yml` con jobs separados para backend y
   frontend en push y Pull Request hacia `main`.
-- [ ] T063 [P] Configurar `npm ci`, build y pruebas Jest/Supertest en el job
+- [x] T063 [P] Configurar `npm ci`, build y pruebas Jest/Supertest en el job
   de backend.
-- [ ] T064 [P] Configurar `npm ci`, build Angular y pruebas unitarias en el job
+- [x] T064 [P] Configurar `npm ci`, build Angular y pruebas unitarias en el job
   de frontend.
 - [ ] T065 Añadir prueba de rendimiento con 500 tareas por proyecto y verificar
   p95 menor que un segundo para operaciones comunes.
